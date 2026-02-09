@@ -1,11 +1,18 @@
 import json
+import google.generativeai as genai
 from openai import AsyncOpenAI
 from app.core.config import get_settings
 from app.services.retrieval_service import find_relevant_chunks, build_context
 from sqlalchemy.ext.asyncio import AsyncSession
 
 cfg = get_settings()
-client = AsyncOpenAI(api_key=cfg.openai_key)
+
+if cfg.ai_provider == "openai":
+    openai_client = AsyncOpenAI(api_key=cfg.openai_key)
+
+if cfg.ai_provider == "gemini":
+    genai.configure(api_key=cfg.gemini_key)
+    gemini_model = genai.GenerativeModel(cfg.gemini_llm)
 
 
 def _clean_json(raw: str) -> str:
@@ -13,6 +20,24 @@ def _clean_json(raw: str) -> str:
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
     return raw.strip()
+
+
+async def _ask(prompt: str, temp: float = 0.5) -> str:
+    """send a prompt to whichever llm is configured"""
+    if cfg.ai_provider == "openai":
+        resp = await openai_client.chat.completions.create(
+            model=cfg.openai_llm,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temp,
+        )
+        return resp.choices[0].message.content.strip()
+
+    # gemini
+    resp = gemini_model.generate_content(
+        prompt,
+        generation_config=genai.types.GenerationConfig(temperature=temp),
+    )
+    return resp.text.strip()
 
 
 async def analyze_match(db: AsyncSession, rid: str, job_text: str) -> dict:
@@ -43,13 +68,8 @@ Respond in this exact JSON format:
 
 Be specific and reference actual content from the resume. Only return valid JSON, no markdown."""
 
-    resp = await client.chat.completions.create(
-        model=cfg.llm,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-    )
-
-    return json.loads(_clean_json(resp.choices[0].message.content))
+    raw = await _ask(prompt, temp=0.3)
+    return json.loads(_clean_json(raw))
 
 
 async def write_cover_letter(
@@ -89,13 +109,7 @@ GUIDELINES:
 
 Write just the cover letter body (no headers/addresses)."""
 
-    resp = await client.chat.completions.create(
-        model=cfg.llm,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
-    )
-
-    return resp.choices[0].message.content.strip()
+    return await _ask(prompt, temp=0.7)
 
 
 async def prep_interview(
@@ -140,10 +154,5 @@ Return as a JSON array:
 
 Only return valid JSON, no markdown."""
 
-    resp = await client.chat.completions.create(
-        model=cfg.llm,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.5,
-    )
-
-    return json.loads(_clean_json(resp.choices[0].message.content))
+    raw = await _ask(prompt, temp=0.5)
+    return json.loads(_clean_json(raw))

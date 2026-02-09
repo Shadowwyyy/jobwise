@@ -116,8 +116,7 @@ class GeneratedContent(Base):
     jd_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("job_descriptions.id", ondelete="CASCADE")
     )
-    kind: Mapped[str] = mapped_column(
-        String(50))  # cover_letter, interview_prep
+    kind: Mapped[str] = mapped_column(String(50))
     body: Mapped[str] = mapped_column(Text)
     meta: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

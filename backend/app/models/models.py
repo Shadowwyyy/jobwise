@@ -6,7 +6,7 @@ from pgvector.sqlalchemy import Vector
 from app.core.database import Base
 from app.core.config import get_settings
 
-settings = get_settings()
+cfg = get_settings()
 
 
 class Resume(Base):
@@ -19,8 +19,7 @@ class Resume(Base):
     raw_text: Mapped[str] = mapped_column(Text)
     parsed_data: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
+        DateTime, default=datetime.utcnow)
 
     chunks: Mapped[list["ResumeChunk"]] = relationship(
         back_populates="resume", cascade="all, delete-orphan"
@@ -37,9 +36,9 @@ class ResumeChunk(Base):
         String(36), ForeignKey("resumes.id", ondelete="CASCADE")
     )
     content: Mapped[str] = mapped_column(Text)
-    chunk_index: Mapped[int] = mapped_column(Integer)
-    section_label: Mapped[str] = mapped_column(String(100), nullable=True)
-    embedding = mapped_column(Vector(settings.embedding_dimensions))
+    idx: Mapped[int] = mapped_column(Integer)
+    section: Mapped[str] = mapped_column(String(100), nullable=True)
+    embedding = mapped_column(Vector(cfg.embed_dims))
 
     resume: Mapped["Resume"] = relationship(back_populates="chunks")
 
@@ -55,16 +54,15 @@ class JobDescription(Base):
     url: Mapped[str] = mapped_column(String(500), nullable=True)
     raw_text: Mapped[str] = mapped_column(Text)
     extracted_skills: Mapped[dict] = mapped_column(JSON, nullable=True)
-    extracted_requirements: Mapped[dict] = mapped_column(JSON, nullable=True)
+    extracted_reqs: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
+        DateTime, default=datetime.utcnow)
 
     chunks: Mapped[list["JDChunk"]] = relationship(
-        back_populates="job_description", cascade="all, delete-orphan"
+        back_populates="jd", cascade="all, delete-orphan"
     )
     analyses: Mapped[list["MatchAnalysis"]] = relationship(
-        back_populates="job_description", cascade="all, delete-orphan"
+        back_populates="jd", cascade="all, delete-orphan"
     )
 
 
@@ -78,10 +76,10 @@ class JDChunk(Base):
         String(36), ForeignKey("job_descriptions.id", ondelete="CASCADE")
     )
     content: Mapped[str] = mapped_column(Text)
-    chunk_index: Mapped[int] = mapped_column(Integer)
-    embedding = mapped_column(Vector(settings.embedding_dimensions))
+    idx: Mapped[int] = mapped_column(Integer)
+    embedding = mapped_column(Vector(cfg.embed_dims))
 
-    job_description: Mapped["JobDescription"] = relationship(back_populates="chunks")
+    jd: Mapped["JobDescription"] = relationship(back_populates="chunks")
 
 
 class MatchAnalysis(Base):
@@ -96,15 +94,14 @@ class MatchAnalysis(Base):
     jd_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("job_descriptions.id", ondelete="CASCADE")
     )
-    match_score: Mapped[float] = mapped_column(Float, nullable=True)
-    matching_skills: Mapped[dict] = mapped_column(JSON, nullable=True)
-    missing_skills: Mapped[dict] = mapped_column(JSON, nullable=True)
-    analysis_text: Mapped[str] = mapped_column(Text, nullable=True)
+    score: Mapped[float] = mapped_column(Float, nullable=True)
+    matched: Mapped[dict] = mapped_column(JSON, nullable=True)
+    missing: Mapped[dict] = mapped_column(JSON, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
+        DateTime, default=datetime.utcnow)
 
-    job_description: Mapped["JobDescription"] = relationship(back_populates="analyses")
+    jd: Mapped["JobDescription"] = relationship(back_populates="analyses")
 
 
 class GeneratedContent(Base):
@@ -119,9 +116,9 @@ class GeneratedContent(Base):
     jd_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("job_descriptions.id", ondelete="CASCADE")
     )
-    content_type: Mapped[str] = mapped_column(String(50))
-    content: Mapped[str] = mapped_column(Text)
-    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=True)
+    kind: Mapped[str] = mapped_column(
+        String(50))  # cover_letter, interview_prep
+    body: Mapped[str] = mapped_column(Text)
+    meta: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
+        DateTime, default=datetime.utcnow)

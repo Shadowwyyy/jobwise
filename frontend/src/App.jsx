@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
-import { FileText, Briefcase, PenTool, MessageSquare, Target, Loader2, Copy, Check } from 'lucide-react';
+import {
+  FileText,
+  Briefcase,
+  PenTool,
+  MessageSquare,
+  Target,
+  Loader2,
+  Copy,
+  Check,
+  Sun,
+  Moon
+} from 'lucide-react';
 import ResumeUpload from './components/ResumeUpload';
 import JobInput from './components/JobInput';
 import MatchResult from './components/MatchResult';
@@ -22,9 +33,38 @@ function App() {
 
   const [copied, setCopied] = useState(false);
 
+  const [theme, setTheme] = useState('light');
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('jobwise-theme');
+
+    if (saved === 'light' || saved === 'dark') {
+      setTheme(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+      return;
+    }
+
+    const prefersDark =
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    const initial = prefersDark ? 'dark' : 'light';
+    setTheme(initial);
+    document.documentElement.classList.toggle('dark', initial === 'dark');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('jobwise-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  };
 
   const loadData = async () => {
     try {
@@ -115,17 +155,31 @@ function App() {
   const ready = activeRes && activeJob;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 dark:bg-gray-900 dark:border-gray-800">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
+                <Briefcase className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold">Jobwise</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  RAG-powered career toolkit
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Jobwise</h1>
-              <p className="text-xs text-gray-500">RAG-powered career toolkit</p>
-            </div>
+
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-gray-800"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              <span className="hidden sm:inline">
+                {theme === 'dark' ? 'Light' : 'Dark'}
+              </span>
+            </button>
           </div>
 
           <nav className="flex gap-1 mt-4">
@@ -135,8 +189,8 @@ function App() {
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   tab === t.id
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
+                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                 }`}
               >
                 <t.icon className="w-4 h-4" />
@@ -148,160 +202,32 @@ function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
-        {/* setup */}
         {tab === 'setup' && (
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Resume</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide mb-3 text-gray-700 dark:text-gray-300">
+                Resume
+              </h2>
               <ResumeUpload onDone={onResumeDone} />
-              {resumes.length > 0 && (
-                <div className="mt-4">
-                  <label className="text-sm text-gray-600 block mb-1">Active resume:</label>
-                  <select
-                    value={activeRes}
-                    onChange={(e) => setActiveRes(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Select a resume</option>
-                    {resumes.map((r) => (
-                      <option key={r.id} value={r.id}>{r.filename}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
+
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Job Description</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide mb-3 text-gray-700 dark:text-gray-300">
+                Job Description
+              </h2>
               <JobInput onDone={onJobDone} />
-              {jobs.length > 0 && (
-                <div className="mt-4">
-                  <label className="text-sm text-gray-600 block mb-1">Active job:</label>
-                  <select
-                    value={activeJob}
-                    onChange={(e) => setActiveJob(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Select a job</option>
-                    {jobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        {j.title}{j.company ? ` — ${j.company}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* match */}
-        {tab === 'match' && (
-          <div>
-            {!ready ? (
-              <div className="text-center py-12 text-gray-500">
-                <Target className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>Select a resume and job description in Setup first.</p>
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={doMatch}
-                  disabled={matchLoading}
-                  className="mb-6 bg-primary-600 text-white rounded-lg px-6 py-2.5 font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {matchLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {matchLoading ? 'Analyzing...' : 'Analyze Match'}
-                </button>
-                <MatchResult data={matchData} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* cover letter */}
-        {tab === 'cover' && (
-          <div>
-            {!ready ? (
-              <div className="text-center py-12 text-gray-500">
-                <PenTool className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>Select a resume and job description in Setup first.</p>
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={doCover}
-                  disabled={coverLoading}
-                  className="mb-6 bg-primary-600 text-white rounded-lg px-6 py-2.5 font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {coverLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {coverLoading ? 'Writing...' : 'Generate Cover Letter'}
-                </button>
-                {letter && (
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 relative">
-                    <button
-                      onClick={() => copy(letter)}
-                      className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 text-gray-500"
-                      title="Copy to clipboard"
-                    >
-                      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
-                      {letter}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* interview prep */}
-        {tab === 'interview' && (
-          <div>
-            {!ready ? (
-              <div className="text-center py-12 text-gray-500">
-                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>Select a resume and job description in Setup first.</p>
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={doPrep}
-                  disabled={prepLoading}
-                  className="mb-6 bg-primary-600 text-white rounded-lg px-6 py-2.5 font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {prepLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {prepLoading ? 'Generating...' : 'Generate Interview Questions'}
-                </button>
-                {questions.length > 0 && (
-                  <div className="space-y-4">
-                    {questions.map((q, i) => (
-                      <div key={i} className="bg-white border border-gray-200 rounded-xl p-5">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900 text-sm pr-4">
-                            {i + 1}. {q.question}
-                          </h4>
-                          <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
-                            q.category === 'technical' ? 'bg-blue-100 text-blue-700' :
-                            q.category === 'behavioral' ? 'bg-purple-100 text-purple-700' :
-                            q.category === 'system design' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {q.category}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-3 italic">{q.why_asked}</p>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Suggested Answer</p>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{q.suggested_answer}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        {tab === 'match' && ready && (
+          <button
+            onClick={doMatch}
+            disabled={matchLoading}
+            className="bg-primary-600 text-white px-6 py-2 rounded-lg"
+          >
+            {matchLoading ? 'Analyzing...' : 'Analyze Match'}
+          </button>
         )}
       </main>
     </div>

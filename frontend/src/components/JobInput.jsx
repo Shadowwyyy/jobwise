@@ -15,8 +15,10 @@ export default function JobInput({ onDone }) {
       setErr('Need a title and the job description text');
       return;
     }
+
     setErr('');
     setLoading(true);
+
     try {
       const res = await createJD({
         title: title.trim(),
@@ -24,7 +26,9 @@ export default function JobInput({ onDone }) {
         company: company.trim() || null,
         url: url.trim() || null,
       });
+
       onDone?.(res);
+
       setTitle('');
       setCompany('');
       setText('');
@@ -37,10 +41,12 @@ export default function JobInput({ onDone }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 transition-colors">
       <div className="flex items-center gap-2 mb-4">
         <Briefcase className="w-5 h-5 text-primary-600" />
-        <h3 className="font-semibold text-gray-800">Add Job Description</h3>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100">
+          Add Job Description
+        </h3>
       </div>
 
       <div className="space-y-3">
@@ -50,31 +56,36 @@ export default function JobInput({ onDone }) {
             placeholder="Job Title *"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
+
           <input
             type="text"
             placeholder="Company"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
+
         <input
           type="url"
           placeholder="Job URL (optional)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
+
         <textarea
           placeholder="Paste the full job description here *"
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={8}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+          className="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
+
         {err && <p className="text-red-500 text-sm">{err}</p>}
+
         <button
           onClick={submit}
           disabled={loading}

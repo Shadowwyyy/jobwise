@@ -1,5 +1,5 @@
 import json
-import google.generativeai as genai
+from google import genai
 from openai import AsyncOpenAI
 from app.core.config import get_settings
 from app.services.retrieval_service import find_relevant_chunks, build_context
@@ -11,8 +11,7 @@ if cfg.ai_provider == "openai":
     openai_client = AsyncOpenAI(api_key=cfg.openai_key)
 
 if cfg.ai_provider == "gemini":
-    genai.configure(api_key=cfg.gemini_key)
-    gemini_model = genai.GenerativeModel(cfg.gemini_llm)
+    gemini_client = genai.Client(api_key=cfg.gemini_key)
 
 
 def _clean_json(raw: str) -> str:
@@ -23,7 +22,6 @@ def _clean_json(raw: str) -> str:
 
 
 async def _ask(prompt: str, temp: float = 0.5) -> str:
-    """send a prompt to whichever llm is configured"""
     if cfg.ai_provider == "openai":
         resp = await openai_client.chat.completions.create(
             model=cfg.openai_llm,
@@ -32,10 +30,10 @@ async def _ask(prompt: str, temp: float = 0.5) -> str:
         )
         return resp.choices[0].message.content.strip()
 
-    # gemini
-    resp = gemini_model.generate_content(
-        prompt,
-        generation_config=genai.types.GenerationConfig(temperature=temp),
+    resp = gemini_client.models.generate_content(
+        model=cfg.gemini_llm,
+        contents=prompt,
+        config={"temperature": temp},
     )
     return resp.text.strip()
 

@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import select
+from app.models import ResumeChunk
 from app.services.embedding_service import embed_one
 
 
@@ -8,17 +9,22 @@ async def find_relevant_chunks(db: AsyncSession, rid: str, query: str, top_k: in
 
     qvec = await embed_one(query)
 
-    rows = await db.execute(
-        text("""
-            SELECT id, content, section, idx,
-                   1 - (embedding <=> :qvec::vector) as sim
-            FROM resume_chunks
-            WHERE resume_id = :rid
-            ORDER BY embedding <=> :qvec::vector
-            LIMIT :k
-        """),
-        {"qvec": str(qvec), "rid": rid, "k": top_k},
+    # Use SQLAlchemy ORM with pgvector's built-in distance method
+    stmt = (
+        select(
+            ResumeChunk.id,
+            ResumeChunk.content,
+            ResumeChunk.section,
+            ResumeChunk.idx,
+            (1 - ResumeChunk.embedding.cosine_distance(qvec)).label('sim')
+        )
+        .where(ResumeChunk.resume_id == rid)
+        .order_by(ResumeChunk.embedding.cosine_distance(qvec))
+        .limit(top_k)
     )
+
+    result = await db.execute(stmt)
+    rows = result.fetchall()
 
     return [
         {
@@ -28,7 +34,7 @@ async def find_relevant_chunks(db: AsyncSession, rid: str, query: str, top_k: in
             "index": r.idx,
             "similarity": round(float(r.sim), 4),
         }
-        for r in rows.fetchall()
+        for r in rows
     ]
 
 

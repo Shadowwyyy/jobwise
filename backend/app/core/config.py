@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     openai_llm: str = "gpt-4o"
 
     # gemini settings
-    gemini_embed_model: str = "models/embedding-001"
-    gemini_embed_dims: int = 768
+    gemini_embed_model: str = "gemini-embedding-001"
+    gemini_embed_dims: int = 3072
     gemini_llm: str = "gemini-2.0-flash"
 
     cors_origins: str = "http://localhost:5173"

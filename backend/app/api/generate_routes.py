@@ -1,90 +1,100 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from app.models import GeneratedContent
 from app.services.generation_service import analyze_match, write_cover_letter, prep_interview
 from app.services.resume_service import get_resume
 from app.services.jd_service import get_jd
 
-router = APIRouter(prefix="/generate", tags=["generate"])
+router = APIRouter()
 
 
-class MatchReq(BaseModel):
+class MatchRequest(BaseModel):
     resume_id: str
-    jd_id: str | None = None
-    job_text: str | None = None
+    jd_id: str
 
 
-class CoverReq(BaseModel):
+class CoverRequest(BaseModel):
     resume_id: str
-    jd_id: str | None = None
-    job_text: str | None = None
+    jd_id: str
     company_name: str = ""
     job_title: str = ""
-    tone: str = "professional"
 
 
-class InterviewReq(BaseModel):
+class InterviewRequest(BaseModel):
     resume_id: str
-    jd_id: str | None = None
-    job_text: str | None = None
+    jd_id: str
     company_name: str = ""
-    num_questions: int = 8
-
-
-async def resolve_jd_text(db: AsyncSession, jd_id: str | None, job_text: str | None) -> str:
-    """grab job text from either id or raw input"""
-    if job_text:
-        return job_text
-    if jd_id:
-        jd = await get_jd(db, jd_id)
-        if jd:
-            return jd.raw_text
-    raise HTTPException(
-        status_code=400, detail="Need either jd_id or job_text")
 
 
 @router.post("/match")
-async def match(payload: MatchReq, db: AsyncSession = Depends(get_db)):
-    res = await get_resume(db, payload.resume_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="Resume not found")
+async def match(payload: MatchRequest, db: AsyncSession = Depends(get_db)):
+    resume = await get_resume(db, payload.resume_id)
+    jd = await get_jd(db, payload.jd_id)
 
-    txt = await resolve_jd_text(db, payload.jd_id, payload.job_text)
-    result = await analyze_match(db, payload.resume_id, txt)
+    result = await analyze_match(db, payload.resume_id, jd.raw_text)
+
+    # Save to database
+    content = GeneratedContent(
+        resume_id=payload.resume_id,
+        jd_id=payload.jd_id,
+        kind="match",
+        body=str(result),
+        meta=result
+    )
+    db.add(content)
+    await db.commit()
+
     return result
 
 
 @router.post("/cover-letter")
-async def cover_letter(payload: CoverReq, db: AsyncSession = Depends(get_db)):
-    res = await get_resume(db, payload.resume_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="Resume not found")
+async def cover_letter(payload: CoverRequest, db: AsyncSession = Depends(get_db)):
+    jd = await get_jd(db, payload.jd_id)
 
-    txt = await resolve_jd_text(db, payload.jd_id, payload.job_text)
     letter = await write_cover_letter(
         db,
-        rid=payload.resume_id,
-        job_text=txt,
-        company=payload.company_name,
-        role=payload.job_title,
-        tone=payload.tone,
+        payload.resume_id,
+        jd.raw_text,
+        payload.company_name,
+        payload.job_title
     )
+
+    # Save to database
+    content = GeneratedContent(
+        resume_id=payload.resume_id,
+        jd_id=payload.jd_id,
+        kind="cover_letter",
+        body=letter,
+        meta={"company": payload.company_name, "title": payload.job_title}
+    )
+    db.add(content)
+    await db.commit()
+
     return {"cover_letter": letter}
 
 
 @router.post("/interview-prep")
-async def interview(payload: InterviewReq, db: AsyncSession = Depends(get_db)):
-    res = await get_resume(db, payload.resume_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="Resume not found")
+async def interview(payload: InterviewRequest, db: AsyncSession = Depends(get_db)):
+    jd = await get_jd(db, payload.jd_id)
 
-    txt = await resolve_jd_text(db, payload.jd_id, payload.job_text)
     questions = await prep_interview(
         db,
-        rid=payload.resume_id,
-        job_text=txt,
-        company=payload.company_name,
-        num_q=payload.num_questions,
+        payload.resume_id,
+        jd.raw_text,
+        payload.company_name
     )
+
+    # Save to database
+    content = GeneratedContent(
+        resume_id=payload.resume_id,
+        jd_id=payload.jd_id,
+        kind="interview",
+        body=str(questions),
+        meta={"questions": questions}
+    )
+    db.add(content)
+    await db.commit()
+
     return {"questions": questions}

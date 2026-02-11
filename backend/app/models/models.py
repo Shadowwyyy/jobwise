@@ -121,3 +121,18 @@ class GeneratedContent(Base):
     meta: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    # resume_upload, jd_added, match_generated, etc.
+    action_type: Mapped[str] = mapped_column(String(50))
+    resume_id: Mapped[str] = mapped_column(String(36), nullable=True)
+    jd_id: Mapped[str] = mapped_column(String(36), nullable=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)

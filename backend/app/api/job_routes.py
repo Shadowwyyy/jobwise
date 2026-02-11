@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.jd_service import process_jd, get_all_jds, get_jd
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter()
 
 
 class JDCreate(BaseModel):

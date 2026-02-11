@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.resume_service import process_resume, get_resume, get_all
 
-router = APIRouter(prefix="/resumes", tags=["resumes"])
+router = APIRouter()
 
 
 @router.post("/upload")

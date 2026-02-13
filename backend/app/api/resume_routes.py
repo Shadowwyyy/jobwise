@@ -52,3 +52,27 @@ async def detail(rid: str, db: AsyncSession = Depends(get_db)):
         "parsed_data": res.parsed_data,
         "created_at": res.created_at.isoformat(),
     }
+
+
+@router.delete("/{rid}")
+async def delete_resume(rid: str, db: AsyncSession = Depends(get_db)):
+    """Delete a resume and all associated chunks"""
+    res = await get_resume(db, rid)
+    if not res:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    await db.delete(res)
+    await db.commit()
+
+    return {"deleted": True, "id": rid}
+
+
+@router.delete("/{rid}")
+async def delete_resume(rid: str, db: AsyncSession = Depends(get_db)):
+    res = await get_resume(db, rid)
+    if not res:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    await db.delete(res)
+    await db.commit()
+    return {"deleted": True}

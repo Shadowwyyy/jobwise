@@ -59,3 +59,14 @@ async def detail(jid: str, db: AsyncSession = Depends(get_db)):
         "extracted_skills": jd.extracted_skills,
         "created_at": jd.created_at.isoformat(),
     }
+
+
+@router.delete("/{jid}")
+async def delete_job(jid: str, db: AsyncSession = Depends(get_db)):
+    jd = await get_jd(db, jid)
+    if not jd:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    await db.delete(jd)
+    await db.commit()
+    return {"deleted": True}

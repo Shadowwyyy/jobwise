@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, Trash2, Loader2 } from 'lucide-react';
+import { Briefcase, Trash2, Loader2, Sparkles } from 'lucide-react';
 
 export default function JobInput({ onDone }) {
   const [rawText, setRawText] = useState('');
@@ -7,6 +7,7 @@ export default function JobInput({ onDone }) {
   const [company, setCompany] = useState('');
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
@@ -23,39 +24,41 @@ export default function JobInput({ onDone }) {
     }
   };
 
-  const extractJobInfo = (text) => {
-    // Extract title (usually first substantial line or after "Title:", "Position:", etc.)
-    const titlePatterns = [
-      /(?:title|position|role):\s*(.+?)(?:\n|$)/i,
-      /^(.+?)\s*(?:\n|at\s)/,
-    ];
-    
-    let extractedTitle = '';
-    for (const pattern of titlePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1] && match[1].length < 100) {
-        extractedTitle = match[1].trim();
-        break;
-      }
+  const smartExtract = async (text) => {
+    setExtracting(true);
+    try {
+      const resp = await fetch('http://localhost:8000/api/jobs/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_text: text }),
+      });
+      const data = await resp.json();
+      
+      setTitle(data.title || '');
+      setCompany(data.company || '');
+      setUrl(data.url || '');
+    } catch (err) {
+      console.error('Smart extract failed:', err);
+      // Fallback to basic regex
+      basicExtract(text);
+    } finally {
+      setExtracting(false);
     }
+  };
+
+  const basicExtract = (text) => {
+    // Look for first line as title
+    const lines = text.split('\n').filter(l => l.trim());
+    const firstLine = lines[0]?.trim() || '';
     
-    // Extract company (look for "at Company", "Company Name", etc.)
-    const companyPatterns = [
-      /(?:company|organization):\s*(.+?)(?:\n|$)/i,
-      /(?:at|@)\s+([A-Z][A-Za-z\s&,.]+?)(?:\n|·|•|,|$)/,
-      /\n([A-Z][A-Za-z\s&,.]{2,40})\n/,
-    ];
+    // Title is usually the first non-URL line
+    let extractedTitle = firstLine.length < 100 ? firstLine : '';
     
-    let extractedCompany = '';
-    for (const pattern of companyPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        extractedCompany = match[1].trim();
-        break;
-      }
-    }
+    // Company - look for common patterns
+    const companyMatch = text.match(/(?:at|@)\s+([A-Z][A-Za-z\s&,.]{2,40})(?:\n|,|·)/);
+    const extractedCompany = companyMatch ? companyMatch[1].trim() : '';
     
-    // Extract URL (look for https links, usually LinkedIn or company career pages)
+    // URL - any https link
     const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
     const extractedUrl = urlMatch ? urlMatch[1] : '';
 
@@ -64,14 +67,17 @@ export default function JobInput({ onDone }) {
     setUrl(extractedUrl);
   };
 
-  const handlePaste = (e) => {
-    const pastedText = e.target.value;
-    setRawText(pastedText);
-    
-    if (pastedText.length > 100) {
-      extractJobInfo(pastedText);
-    }
-  };
+const handlePaste = (e) => {
+  const pastedText = e.target.value;
+  setRawText(pastedText);
+  
+  console.log('Pasted text length:', pastedText.length);
+  
+  if (pastedText.length > 100) {
+    console.log('Calling smartExtract...');
+    smartExtract(pastedText);
+  }
+};
 
   const handleSubmit = async () => {
     if (!rawText.trim()) return;
@@ -129,18 +135,23 @@ export default function JobInput({ onDone }) {
         
         {/* Auto-extracted fields */}
         <div className="grid grid-cols-2 gap-3 mt-3">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Job title (auto-detected)"
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Job title"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm pr-8"
+            />
+            {extracting && (
+              <Sparkles className="absolute right-2 top-2.5 w-4 h-4 text-blue-500 animate-pulse" />
+            )}
+          </div>
           <input
             type="text"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            placeholder="Company (auto-detected)"
+            placeholder="Company"
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm"
           />
         </div>
@@ -149,7 +160,7 @@ export default function JobInput({ onDone }) {
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="Job URL (auto-detected)"
+          placeholder="Job URL"
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm mt-3"
         />
 

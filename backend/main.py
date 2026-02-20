@@ -8,6 +8,7 @@ from app.api.generate_routes import router as generate_router
 from app.api.analytics_routes import router as analytics_router
 from app.api.history_routes import router as history_router
 from app.api.applications_routes import router as applications_router
+from app.api.resume_tailoring_routes import router as tailoring_router
 
 
 cfg = get_settings()
@@ -43,3 +44,5 @@ def root():
 
 app.include_router(applications_router,
                    prefix="/api/applications", tags=["applications"])
+
+app.include_router(tailoring_router, prefix="/api/tailor", tags=["tailoring"])

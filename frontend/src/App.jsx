@@ -20,6 +20,7 @@ import HistoryTab from './components/HistoryTab';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { getResumes, getJDs, runMatch, runCoverLetter, runInterviewPrep } from './services/api';
 import ApplicationTracker from './components/ApplicationTracker';
+import ResumeTailoring from './components/ResumeTailoring';
 
 function App() {
   const [tab, setTab] = useState('setup');
@@ -138,6 +139,7 @@ function App() {
   const tabs = [
     { id: 'setup', label: 'Setup', icon: FileText },
     { id: 'tracker', label: 'Tracker', icon: Target },
+    { id: 'tailor', label: 'Tailor Resume', icon: PenTool },
     { id: 'match', label: 'Skill Match', icon: Target },
     { id: 'cover', label: 'Cover Letter', icon: PenTool },
     { id: 'interview', label: 'Interview Prep', icon: MessageSquare },
@@ -366,6 +368,7 @@ function App() {
         {tab === 'history' && <HistoryTab darkMode={theme === 'dark'} />}
         {tab === 'analytics' && <AnalyticsDashboard darkMode={theme === 'dark'} />}
         {tab === 'tracker' && <ApplicationTracker darkMode={theme === 'dark'} resumes={resumes} jobs={jobs} />}
+        {tab === 'tailor' && <ResumeTailoring darkMode={theme === 'dark'} activeRes={activeRes} activeJob={activeJob} resumes={resumes} jobs={jobs} />}
       </main>
     </div>
   );

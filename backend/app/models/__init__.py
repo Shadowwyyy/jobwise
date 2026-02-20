@@ -16,6 +16,7 @@ __all__ = [
     "MatchAnalysis",
     "GeneratedContent",
     "ActivityLog",
+    "Application",
 ]
 
 
@@ -145,3 +146,29 @@ class ActivityLog(Base):
     metadata_json: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
+
+
+class Application(Base):
+    __tablename__ = "applications"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    resume_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("resumes.id", ondelete="CASCADE")
+    )
+    jd_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("job_descriptions.id", ondelete="CASCADE")
+    )
+    # saved, applied, interviewing, offer, rejected
+    status: Mapped[str] = mapped_column(String(50), default="saved")
+    applied_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    interview_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    follow_up_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, nullable=True)
+    # recruiter name, email, etc.
+    contact_info: Mapped[dict] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

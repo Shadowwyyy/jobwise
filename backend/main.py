@@ -7,6 +7,8 @@ from app.api.job_routes import router as job_router
 from app.api.generate_routes import router as generate_router
 from app.api.analytics_routes import router as analytics_router
 from app.api.history_routes import router as history_router
+from app.api.applications_routes import router as applications_router
+
 
 cfg = get_settings()
 app = FastAPI(title="Jobwise API")
@@ -37,3 +39,7 @@ async def startup():
 @app.get("/")
 def root():
     return {"status": "ok", "app": "Jobwise API"}
+
+
+app.include_router(applications_router,
+                   prefix="/api/applications", tags=["applications"])

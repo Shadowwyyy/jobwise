@@ -19,6 +19,7 @@ import MatchResult from './components/MatchResult';
 import HistoryTab from './components/HistoryTab';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { getResumes, getJDs, runMatch, runCoverLetter, runInterviewPrep } from './services/api';
+import ApplicationTracker from './components/ApplicationTracker';
 
 function App() {
   const [tab, setTab] = useState('setup');
@@ -136,6 +137,7 @@ function App() {
 
   const tabs = [
     { id: 'setup', label: 'Setup', icon: FileText },
+    { id: 'tracker', label: 'Tracker', icon: Target },
     { id: 'match', label: 'Skill Match', icon: Target },
     { id: 'cover', label: 'Cover Letter', icon: PenTool },
     { id: 'interview', label: 'Interview Prep', icon: MessageSquare },
@@ -351,7 +353,7 @@ function App() {
                     {questions.map((q, idx) => (
                       <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                         <h4 className="font-semibold text-lg mb-2">Q{idx + 1}: {q.question}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{q.answer}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{q.suggested_answer}</p>
                       </div>
                     ))}
                   </div>
@@ -363,6 +365,7 @@ function App() {
 
         {tab === 'history' && <HistoryTab darkMode={theme === 'dark'} />}
         {tab === 'analytics' && <AnalyticsDashboard darkMode={theme === 'dark'} />}
+        {tab === 'tracker' && <ApplicationTracker darkMode={theme === 'dark'} resumes={resumes} jobs={jobs} />}
       </main>
     </div>
   );

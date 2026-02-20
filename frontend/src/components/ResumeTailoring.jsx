@@ -72,19 +72,17 @@ export default function ResumeTailoring({ darkMode, activeRes, activeJob, resume
           resume_id: activeRes,
           jd_id: activeJob,
           approved_sections: approvedSections,
-          first_name: "Jeet",  // TODO: Extract from resume
+          first_name: "Jeet",
           last_name: "Sharma"
         })
       });
       
-      const data = await resp.json();
-      
-      // Download as text file (PDF generation would need additional backend setup)
-      const blob = new Blob([data.resume_text], { type: 'text/plain' });
+      // Download PDF
+      const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = data.filename.replace('.pdf', '.txt');
+      a.download = `Jeet_Sharma_${job.company.replace(/\s+/g, '_')}_Resume.pdf`;
       a.click();
       URL.revokeObjectURL(url);
       
@@ -137,7 +135,7 @@ export default function ResumeTailoring({ darkMode, activeRes, activeJob, resume
             {generating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
+                Generating PDF...
               </>
             ) : (
               <>

@@ -19,7 +19,6 @@ class TailorRequest(BaseModel):
 class FinalizeRequest(BaseModel):
     resume_id: str
     jd_id: str
-    # {"header": "improved text", "skills": "improved text", ...}
     approved_sections: dict
     first_name: str
     last_name: str
@@ -42,7 +41,7 @@ async def suggest_improvements(payload: TailorRequest, db: AsyncSession = Depend
 
 @router.post("/finalize")
 async def finalize_resume(payload: FinalizeRequest, db: AsyncSession = Depends(get_db)):
-    """Build final tailored resume from approved sections"""
+    """Build final tailored resume and return as PDF download"""
 
     resume = await get_resume(db, payload.resume_id)
     jd = await get_jd(db, payload.jd_id)
@@ -58,31 +57,6 @@ async def finalize_resume(payload: FinalizeRequest, db: AsyncSession = Depends(g
         jd.company or "Company"
     )
 
-    return {
-        "resume_text": resume_text,
-        "filename": filename
-    }
-
-
-@router.post("/finalize")
-async def finalize_resume(payload: FinalizeRequest, db: AsyncSession = Depends(get_db)):
-    """Build final tailored resume from approved sections"""
-
-    resume = await get_resume(db, payload.resume_id)
-    jd = await get_jd(db, payload.jd_id)
-
-    if not resume or not jd:
-        raise HTTPException(status_code=404, detail="Resume or JD not found")
-
-    resume_text, filename = build_tailored_resume(
-        resume.parsed_data,
-        payload.approved_sections,
-        payload.first_name,
-        payload.last_name,
-        jd.company or "Company"
-    )
-
-    # Generate PDF
     pdf_bytes = generate_resume_pdf(resume_text, filename)
 
     return Response(

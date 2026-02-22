@@ -1,4 +1,5 @@
 import json
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -88,23 +89,50 @@ async def extract_job_info(payload: dict):
     if not raw_text:
         return {"title": "", "company": "", "url": ""}
 
-    prompt = f"""You are extracting structured job information from a job posting.
+    # --- Layer 1: Regex pre-extraction (fast, no API call needed for URLs) ---
+    url_match = re.search(r'(https?://[^\s<>"]+)', raw_text)
+    extracted_url = url_match.group(1).rstrip(".,)") if url_match else ""
 
-JOB POSTING TEXT:
-{raw_text[:2000]}
+    # Common patterns: "at CompanyName", "About CompanyName", "Company: Foo"
+    company_patterns = [
+        # "About Acme Corp"
+        r'(?:^|\n)\s*About\s+([A-Z][^\n]{2,40}?)(?:\s*\n)',
+        # "Company: Acme"
+        r'Company(?:\s+Name)?[:\-]\s*([A-Z][^\n]{1,40})',
+        # "joining Acme as"
+        r'(?:joining|join)\s+([A-Z][A-Za-z0-9\s&,\.]{2,35}?)(?:\s+team|\s+as\b|[,\n])',
+        # "at Acme, we"
+        r'(?:at|@)\s+([A-Z][A-Za-z0-9\s&\.]{2,30}?)(?:\s+is|\s+are|\s+we|\s+you|[,\n\.])',
+        # "Acme is hiring"
+        r'(?:^|\n)\s*([A-Z][A-Za-z0-9\s&\.]{2,30}?)\s+is (?:hiring|looking|seeking)',
+    ]
 
-Extract these 3 fields:
-1. title: The actual job position/role (e.g., "Software Engineer I", "Backend Developer", "Data Scientist")
-   - NOT "About the job" or other generic headers
-   - Should be the specific role they're hiring for
-2. company: The company name (e.g., "WHOOP", "Google", "Amazon")
-   - Just the company name, nothing else
-3. url: Any job posting URL found in the text (LinkedIn, company careers page, etc.)
-   - Must be a complete https:// URL
-   - Empty string if no URL found
+    regex_company = ""
+    for pattern in company_patterns:
+        m = re.search(pattern, raw_text[:3000], re.MULTILINE)
+        if m:
+            candidate = m.group(1).strip()
+            # Filter out false positives (generic phrases)
+            generic = {"the", "a", "an", "our", "we",
+                       "you", "this", "that", "us", "team"}
+            if candidate.lower().split()[0] not in generic and len(candidate) > 1:
+                regex_company = candidate
+                break
 
-CRITICAL: Return ONLY this exact JSON format, no markdown, no explanation:
-{{"title": "exact job title here", "company": "company name here", "url": "url here or empty string"}}"""
+    # Layer 2: Gemini extraction with improved prompt
+    prompt = f"""Extract structured information from this job posting. Be precise.
+
+JOB POSTING:
+{raw_text[:3000]}
+
+Return ONLY valid JSON with these exact keys:
+{{
+  "title": "The specific job role/position being hired for. Not 'About the job' or section headers. E.g. 'Senior Backend Engineer', 'Data Scientist II'",
+  "company": "The hiring company's name only. Look for it near 'About [Company]', 'at [Company]', '[Company] is hiring', or at the very top of the posting. E.g. 'Stripe', 'OpenGov', 'Disney'. Empty string if truly not found.",
+  "confidence": "high or low — how confident you are in the company name"
+}}
+
+No markdown. No explanation. Raw JSON only."""
 
     try:
         resp = gemini_client.models.generate_content(
@@ -113,29 +141,33 @@ CRITICAL: Return ONLY this exact JSON format, no markdown, no explanation:
             config={"temperature": 0},
         )
         result = resp.text.strip()
-
-        # Clean markdown fences
         cleaned = result.replace("```json", "").replace("```", "").strip()
         data = json.loads(cleaned)
 
+        gemini_title = data.get("title", "").strip()
+        gemini_company = data.get("company", "").strip()
+        gemini_confidence = data.get("confidence", "low")
+
+        # Layer 3: Merge — prefer Gemini when confident, regex as fallback
+        final_company = gemini_company
+        if not final_company or gemini_confidence == "low":
+            final_company = regex_company or gemini_company
+
         return {
-            "title": data.get("title", ""),
-            "company": data.get("company", ""),
-            "url": data.get("url", "")
+            "title": gemini_title,
+            "company": final_company,
+            "url": extracted_url
         }
 
     except Exception as e:
         print(f"Extraction failed: {e}")
-        # Fallback to basic parsing
-        import re
+        # Full fallback: regex only
         lines = [l.strip() for l in raw_text.split('\n') if l.strip()]
-        first_line = lines[0] if lines else ""
-
-        # Simple URL extraction
-        url_match = re.search(r'(https?://[^\s]+)', raw_text)
-
+        first_meaningful = next(
+            (l for l in lines if len(l) > 5 and not l.lower().startswith("http")), ""
+        )
         return {
-            "title": first_line[:100] if len(first_line) < 100 else "",
-            "company": "",
-            "url": url_match.group(1) if url_match else ""
+            "title": first_meaningful[:100],
+            "company": regex_company,
+            "url": extracted_url
         }

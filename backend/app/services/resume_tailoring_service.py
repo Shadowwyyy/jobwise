@@ -74,6 +74,7 @@ Guidelines:
 - Make it ATS-friendly
 - Keep the same structure/format
 - DO NOT fabricate experience
+- CRITICAL: Keep each bullet point to 1-2 lines max (under 120 characters). Do not make bullets longer than the originals.
 
 Return ONLY valid JSON:
 {{

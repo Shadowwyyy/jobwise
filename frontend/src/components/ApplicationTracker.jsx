@@ -56,9 +56,11 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
       await fetch(`http://localhost:8000/api/applications/${appId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
-          applied_date: newStatus === 'applied' ? new Date().toISOString() : undefined
+          applied_date: newStatus === 'applied'
+            ? new Date().toISOString().replace('Z', '+00:00')
+            : undefined
         })
       });
       loadApplications();
@@ -84,7 +86,7 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
 
   const deleteApp = async (appId) => {
     if (!confirm('Delete this application?')) return;
-    
+
     try {
       await fetch(`http://localhost:8000/api/applications/${appId}`, {
         method: 'DELETE'
@@ -164,7 +166,7 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
                 ({applications.filter(a => a.status === status).length})
               </span>
             </div>
-            
+
             <div className="space-y-2">
               {applications
                 .filter(a => a.status === status)
@@ -179,7 +181,7 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                       {app.job.title}
                     </p>
-                    
+
                     {/* Status dropdown */}
                     <select
                       value={app.status}
@@ -190,7 +192,7 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
-                    
+
                     {/* Notes */}
                     {editingId === app.id ? (
                       <div>
@@ -240,7 +242,7 @@ export default function ApplicationTracker({ darkMode, resumes, jobs }) {
                         </div>
                       </>
                     )}
-                    
+
                     {app.applied_date && (
                       <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
                         <Calendar className="w-3 h-3" />

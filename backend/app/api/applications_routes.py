@@ -25,6 +25,11 @@ class ApplicationUpdate(BaseModel):
     contact_info: dict = None
 
 
+def parse_dt(value: str) -> datetime:
+    """Parse ISO datetime string and strip timezone info to match DB naive timestamps"""
+    return datetime.fromisoformat(value.replace('Z', '+00:00')).replace(tzinfo=None)
+
+
 @router.post("/")
 async def create_application(payload: ApplicationCreate, db: AsyncSession = Depends(get_db)):
     """Create a new application tracker"""
@@ -119,11 +124,11 @@ async def update_application(app_id: str, payload: ApplicationUpdate, db: AsyncS
     if payload.contact_info is not None:
         app.contact_info = payload.contact_info
     if payload.applied_date:
-        app.applied_date = datetime.fromisoformat(payload.applied_date)
+        app.applied_date = parse_dt(payload.applied_date)
     if payload.interview_date:
-        app.interview_date = datetime.fromisoformat(payload.interview_date)
+        app.interview_date = parse_dt(payload.interview_date)
     if payload.follow_up_date:
-        app.follow_up_date = datetime.fromisoformat(payload.follow_up_date)
+        app.follow_up_date = parse_dt(payload.follow_up_date)
 
     app.updated_at = datetime.utcnow()
 

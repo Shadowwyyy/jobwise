@@ -93,7 +93,7 @@ Return ONLY valid JSON:
                 "improved": data.get("improved", original),
                 "changes": data.get("changes", []),
                 "reasoning": data.get("reasoning", ""),
-                "approved": False  # Default not approved
+                "approved": False
             }
         except Exception as e:
             print(f"Failed to generate suggestion for {section}: {e}")
@@ -114,20 +114,24 @@ Return ONLY valid JSON:
     }
 
 
-def build_tailored_resume(original_data: dict, approved_sections: dict, first_name: str, last_name: str, company: str) -> str:
-    """Build final resume text from approved sections"""
-
-    final_sections = []
+def build_tailored_resume(
+    original_data: dict,
+    approved_sections: dict,
+    first_name: str,
+    last_name: str,
+    company: str
+) -> tuple[dict, str]:
+    """
+    Build final resume as a structured dict for PDF generation.
+    Returns (resume_dict, filename)
+    """
+    resume_dict = {}
 
     for section in ['header', 'education', 'skills', 'experience', 'projects']:
         if section in approved_sections and approved_sections[section]:
-            # Use improved version
-            final_sections.append(approved_sections[section])
-        elif section in original_data:
-            # Use original
-            final_sections.append(original_data[section])
+            resume_dict[section] = approved_sections[section]
+        elif section in original_data and original_data[section]:
+            resume_dict[section] = original_data[section]
 
-    resume_text = "\n\n".join(final_sections)
-    filename = f"{first_name}_{last_name}_{company}_Resume.pdf"
-
-    return resume_text, filename
+    filename = f"{first_name}_{last_name}_{company.replace(' ', '_')}_Resume.pdf"
+    return resume_dict, filename

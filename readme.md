@@ -6,31 +6,78 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?style=flat-square)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat-square)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL+pgvector-blue?style=flat-square)
+![Gemini](https://img.shields.io/badge/Google_Gemini-AI-orange?style=flat-square)
 
 ---
 
-## What it does
+## Overview
 
-Jobwise takes your resume and a job description and uses retrieval-augmented generation to:
+Jobwise takes your resume and a job description and uses retrieval-augmented generation (RAG) to give you a real edge in your job search. Upload your resume once, paste any job description, and get AI-powered tailoring, cover letters, interview prep, and skill gap analysis — all grounded in your actual experience.
 
-- **Match your skills** against job requirements with semantic similarity search
-- **Tailor your resume** section by section with before/after suggestions you can approve or reject
-- **Generate cover letters** grounded in your actual experience
-- **Prep you for interviews** with role-specific questions and suggested answers from your background
-- **Track your applications** with a Kanban-style board across Saved → Applied → Interviewing → Offer → Rejected
+---
+
+## Screenshots
+
+### Setup — Upload resume & paste job descriptions
+
+![Setup](screenshots/setup.png)
+
+### Resume Tailoring — Section-by-section AI suggestions with before/after comparison
+
+![Resume Tailoring](screenshots/tailoring.png)
+
+### Skill Match — Semantic similarity scoring with matched and missing skills
+
+![Skill Match](screenshots/skill-match.png)
+
+### Cover Letter — RAG-generated cover letters grounded in your experience
+
+![Cover Letter](screenshots/cover-letter.png)
+
+### Interview Prep — Role-specific questions with suggested answers from your background
+
+![Interview Prep](screenshots/interview-prep.png)
+
+### Application Tracker — Kanban board to track every application
+
+![Application Tracker](screenshots/tracker.png)
+
+### History — Browse all previously generated content
+
+![History](screenshots/history.png)
+
+### Analytics — Activity dashboard and content breakdown
+
+![Analytics](screenshots/analytics.png)
+
+---
+
+## Features
+
+**Resume Tailoring** — Upload your resume, paste a job description, and get section-by-section improvement suggestions with reasoning. Approve or reject each change individually, then download the tailored resume as a PDF.
+
+**Skill Match** — pgvector semantic search compares your resume against job requirements and surfaces matched and missing skills with a similarity score.
+
+**Cover Letter Generation** — RAG pipeline retrieves the most relevant parts of your resume and generates a cover letter grounded in your actual experience.
+
+**Interview Prep** — Generates role-specific questions with suggested answers drawn from your background, organized by category.
+
+**Application Tracker** — Kanban board to track every application across Saved → Applied → Interviewing → Offer → Rejected, with notes and date tracking.
+
+**Analytics** — Dashboard showing content breakdown by type and full history of all generated content.
 
 ---
 
 ## Tech Stack
 
-| Layer | Tech |
-|---|---|
-| Backend | Python 3.11+, FastAPI, SQLAlchemy (async) |
-| Database | PostgreSQL + pgvector |
-| AI | Google Gemini (generation + embeddings), OpenAI (fallback) |
-| Frontend | React 18, Vite, Tailwind CSS |
-| Parsing | pdfplumber |
-| Infrastructure | Docker, Docker Compose |
+| Layer          | Tech                                      |
+| -------------- | ----------------------------------------- |
+| Backend        | Python 3.11+, FastAPI, SQLAlchemy (async) |
+| Database       | PostgreSQL + pgvector                     |
+| AI             | Google Gemini (generation + embeddings)   |
+| Frontend       | React 18, Vite, Tailwind CSS              |
+| Parsing        | pdfplumber                                |
+| Infrastructure | Docker, Docker Compose                    |
 
 ---
 
@@ -41,7 +88,7 @@ Jobwise takes your resume and a job description and uses retrieval-augmented gen
 - Python 3.11+
 - Node.js 18+
 - Docker
-- Gemini API key (or OpenAI API key)
+- Gemini API key
 
 ### 1. Clone & configure
 
@@ -80,6 +127,17 @@ App runs at `http://localhost:5173` — backend API at `http://localhost:8000`.
 
 ---
 
+## Environment Variables
+
+```env
+GEMINI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key        # optional fallback
+DATABASE_URL=postgresql+asyncpg://...
+EMBED_DIMS=3072
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -99,30 +157,3 @@ jobwise/
 │       └── index.css
 └── docker-compose.yml
 ```
-
----
-
-## Environment Variables
-
-```env
-GEMINI_API_KEY=your_gemini_key
-OPENAI_API_KEY=your_openai_key        # optional fallback
-DATABASE_URL=postgresql+asyncpg://...
-EMBED_DIMS=3072
-```
-
----
-
-## Features In Depth
-
-**Resume Tailoring** — Upload your resume, paste a job description, and get section-by-section improvement suggestions with reasoning. Approve or reject each change individually, then download the tailored resume as a PDF.
-
-**Skill Match** — pgvector semantic search compares your resume chunks against job requirements and surfaces matched and missing skills with a similarity score.
-
-**Cover Letter Generation** — RAG pipeline retrieves the most relevant parts of your resume and generates a cover letter grounded in your actual experience, not generic filler.
-
-**Interview Prep** — Generates role-specific questions with suggested answers drawn from your background, organized by category.
-
-**Application Tracker** — Kanban board to track every application with status, dates, and notes. Automatically logs the applied date when you move a card.
-
-**Analytics** — Dashboard showing activity over the past 7 days, content breakdown by type, and full history of generated content.

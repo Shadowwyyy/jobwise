@@ -11,6 +11,8 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { getResumes, getJDs, runMatch, runCoverLetter, runInterviewPrep } from './services/api';
 import ApplicationTracker from './components/ApplicationTracker';
 import ResumeTailoring from './components/ResumeTailoring';
+import ErrorToast from './components/ErrorToast';
+import { useErrorHandler } from './hooks/useErrorHandler';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
@@ -383,6 +385,8 @@ function App() {
     return saved === 'light' || saved === 'dark' ? saved : 'dark';
   });
 
+  const { error, handleError, clearError } = useErrorHandler();
+
   useEffect(() => { loadData(); }, []);
   useEffect(() => {
     localStorage.setItem('jobwise-theme', theme);
@@ -394,7 +398,7 @@ function App() {
       const [r, j] = await Promise.all([getResumes(), getJDs()]);
       setResumes(r);
       setJobs(j);
-    } catch (e) { console.error('failed to load:', e); }
+    } catch (e) { handleError(e, 'loading data'); }
   };
 
   const onResumeDone = (res) => { setResumes((prev) => [res, ...prev]); setActiveRes(res.id); };
@@ -404,7 +408,7 @@ function App() {
     if (!activeRes || !activeJob) return;
     setMatchLoading(true); setMatchData(null);
     try { const data = await runMatch({ resume_id: activeRes, jd_id: activeJob }); setMatchData(data); }
-    catch (e) { console.error(e); } finally { setMatchLoading(false); }
+    catch (e) { handleError(e, 'skill match'); } finally { setMatchLoading(false); }
   };
 
   const doCover = async () => {
@@ -414,7 +418,7 @@ function App() {
     try {
       const data = await runCoverLetter({ resume_id: activeRes, jd_id: activeJob, company_name: job?.company || '', job_title: job?.title || '' });
       setLetter(data.cover_letter);
-    } catch (e) { console.error(e); } finally { setCoverLoading(false); }
+    } catch (e) { handleError(e, 'cover letter'); } finally { setCoverLoading(false); }
   };
 
   const doPrep = async () => {
@@ -424,7 +428,7 @@ function App() {
     try {
       const data = await runInterviewPrep({ resume_id: activeRes, jd_id: activeJob, company_name: job?.company || '' });
       setQuestions(data.questions);
-    } catch (e) { console.error(e); } finally { setPrepLoading(false); }
+    } catch (e) { handleError(e, 'interview prep'); } finally { setPrepLoading(false); }
   };
 
   const copy = (txt) => { navigator.clipboard.writeText(txt); setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -448,6 +452,9 @@ function App() {
     <>
       <style>{styles}</style>
       <div className="jw-root">
+
+        {/* Error toast */}
+        {error && <ErrorToast error={error} onClose={clearError} />}
 
         {/* Header */}
         <header className="jw-header">
